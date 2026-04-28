@@ -1,0 +1,656 @@
+@import "@videojs/react/video/minimal-skin.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts fallback already loaded via <link> in index.html ─────── */
+
+:root {
+  --color-bg: #050507;
+  --color-surface: #0a0a0f;
+  --color-surface-2: #111118;
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-gold: #d4a853;
+  --color-gold-dim: rgba(212, 168, 83, 0.15);
+  --color-text: #e8e8f0;
+  --color-muted: #8b8b9e;
+  --carousel-height: 120px;
+  --carousel-peek: 66px; /* visible "tease" strip when hidden */
+  --transition-slide: 0.42s cubic-bezier(0.19, 1, 0.22, 1);
+  --ui-gap-x: 32px;
+  --ui-gap-y: 24px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Standard syntax */
+  outline: none !important;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+
+/* ─── Carousel strip ─────────────────────────────────────────────────────── */
+.carousel-strip {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--carousel-height) + var(--carousel-peek));
+  /* Start translated so only the peek strip is visible */
+  transform: translateY(calc(var(--carousel-height)));
+  transition:
+    transform var(--transition-slide),
+    opacity 0.3s ease;
+  z-index: 50;
+  will-change: transform, opacity;
+}
+
+.carousel-strip.revealed {
+  transform: translateY(0);
+  backdrop-filter: blur(20px);
+}
+
+/* Hide visually during zoom without unmounting to preserve scroll state */
+.carousel-strip.is-zoomed,
+.pin-nav-btn.is-zoomed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The inner scroll row */
+.carousel-inner {
+  height: var(--carousel-height);
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  border-top: 1px solid var(--color-border);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  transition: all var(--transition-slide);
+  will-change: transform, filter;
+}
+.carousel-inner::-webkit-scrollbar {
+  display: none;
+}
+/* Disable snapping during active drag/momentum to allow smooth "unwinding" */
+.carousel-inner.dragging {
+  scroll-snap-type: none;
+}
+
+/* Tease strip — the 28px tab that stays visible */
+.carousel-peek-bar {
+  height: var(--carousel-peek);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+  backdrop-filter: blur(0);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.carousel-peek-handle {
+  display: block;
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 1); /* White base, opacity handled by JS */
+  box-shadow: 0 2px rgba(0, 0, 0, 0.4);
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.carousel-peek-handle:not(.is-dragging) {
+  transition:
+    transform 0.3s cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 0.3s ease;
+}
+
+.carousel-strip.revealed .carousel-peek-bar {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.7) 100%);
+  backdrop-filter: blur(20px);
+}
+
+/* ─── Carousel thumbnail card ────────────────────────────────────────────── */
+.thumb-card {
+  flex: 0 0 auto;
+  width: 108px;
+  height: 108px;
+  overflow: hidden;
+  position: relative;
+  scroll-snap-align: center;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.2s ease-in-out;
+  will-change: transform, opacity, filter;
+  filter: brightness(0.5);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 1);
+}
+
+@media (hover: hover) {
+  .thumb-card:hover {
+    transform: scale(1.1);
+    transform-origin: center;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 1);
+    filter: brightness(1);
+    opacity: 1;
+  }
+  .thumb-card:active {
+    filter: brightness(1.2) saturate(1.5);
+  }
+}
+
+.thumb-card.active {
+  opacity: 1;
+  filter: brightness(1);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+}
+
+.thumb-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+/* Video badge */
+.video-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Section divider label in the carousel */
+.section-divider {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  gap: 4px;
+  opacity: 1;
+  user-select: none;
+  width: 130px;
+  text-align: center;
+  scroll-snap-align: center;
+}
+.section-divider-line {
+  width: 1px;
+  height: 48px;
+  background: #fff;
+  opacity: 0.1;
+}
+.section-divider-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.7;
+}
+
+/* ─── Tooltip ────────────────────────────────────────────────────────────── */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(5, 5, 7, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 5px 9px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: var(--color-text);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  will-change: opacity;
+  z-index: 60;
+  backdrop-filter: blur(8px);
+}
+
+.thumb-card:hover .tooltip {
+  opacity: 1;
+}
+
+/* ─── Presentation area ──────────────────────────────────────────────────── */
+.presentation {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  touch-action: none;
+}
+
+.swipe-hint {
+  display: none;
+}
+
+/* ─── Zoom Mechanics ─────────────────────────────────────────────────────── */
+.zoom-action-btn {
+  position: fixed;
+  top: var(--ui-gap-y);
+  right: var(--ui-gap-x);
+  z-index: 2100;
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  will-change: transform, background-color, border-color;
+}
+.zoom-action-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: #fff;
+  transform: scale(1.05);
+}
+
+.help-trigger {
+  top: calc(var(--ui-gap-y) + 60px);
+}
+
+.help-trigger.shift-up {
+  transform: translateY(-60px);
+}
+
+.help-trigger.shift-up:hover {
+  transform: translateY(-60px) scale(1.05);
+}
+
+.zoom-trigger {
+  right: var(--ui-gap-x);
+}
+
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #000;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Prevent scrollbars during transforms */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.4s ease,
+    visibility 0.4s;
+}
+
+.zoom-overlay.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.zoom-overlay img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Shimmer skeleton for loading state */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+/* ─── Shortcut Modal ─────────────────────────────────────────────────────── */
+.shortcut-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.shortcut-modal-content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 42px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: scaleIn 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+  will-change: transform, opacity;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px 32px;
+  align-items: center;
+}
+
+.shortcut-row {
+  display: contents;
+}
+
+.shortcut-key-wrapper {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  font-size: 12px;
+  line-height: 2;
+}
+
+.shortcut-desc {
+  font-size: 13px;
+  color: var(--color-text);
+  font-family: "JetBrains Mono", monospace;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* ─── Media info overlay ─────────────────────────────────────────────────── */
+.media-info {
+  position: fixed;
+  top: var(--ui-gap-y);
+  left: var(--ui-gap-x);
+  transform: none;
+  z-index: 2001; /* Ensure it's above the zoom overlay */
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 12px 16px;
+}
+
+.media-info-right {
+  text-align: left;
+  margin-top: 6px;
+}
+
+/* ─── Navigation arrows ──────────────────────────────────────────────────── */
+.nav-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 44px;
+  height: 78px;
+  max-height: calc(100vh - 320px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  will-change: transform, background-color, border-color;
+}
+.nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+.nav-arrow:active {
+  filter: brightness(10);
+}
+.nav-arrow svg {
+  stroke: #fff;
+}
+
+/* ─── Pin navigation ─────────────────────────────────────────────────────── */
+.pin-nav-btn {
+  position: fixed;
+  bottom: calc(var(--carousel-peek) / 8);
+  z-index: 60;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform var(--transition-slide);
+  will-change: transform, background-color, border-color;
+  color: rgba(255, 255, 255, 0.7);
+}
+.pin-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: #fff;
+  color: #fff;
+}
+
+/* Move up in sync with the carousel reveal */
+.pin-nav-btn.revealed {
+  transform: translateY(calc(-1 * var(--carousel-height)));
+}
+
+.pin-nav-btn svg {
+  stroke: currentColor;
+}
+
+.pin-nav-btn.prev {
+  left: var(--ui-gap-x);
+}
+.pin-nav-btn.next {
+  right: var(--ui-gap-x);
+  flex-direction: row-reverse;
+}
+
+.pin-nav-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
+/* ─── Keyboard hint ──────────────────────────────────────────────────────── */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 6px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+}
+
+/* ─── Video Player Hacks ─────────────────────────────────────────────────── */
+
+.video-js {
+  background: transparent !important;
+}
+
+.media-minimal-skin.media-minimal-skin--video:after {
+  display: none;
+}
+
+.media-minimal-skin--video .media-controls {
+  max-width: 640px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-bottom: var(--video-controls-margin, 0px) !important;
+  transition: all 0.3s ease;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(20px);
+}
+.media-minimal-skin.media-minimal-skin--video {
+  border: none !important;
+  border-radius: 0 !important;
+}
+.media-overlay {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --carousel-peek: 48px;
+  }
+
+  * {
+    backdrop-filter: none !important;
+  }
+
+  .media-info {
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    width: 100%;
+    max-width: calc(100vw - (2 * var(--ui-gap-x)));
+  }
+
+  .media-info-right {
+    text-align: right;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .swipe-hint {
+    display: block;
+  }
+
+  .help-trigger {
+    display: none;
+  }
+
+  .zoom-trigger,
+  .zoom-exit {
+    display: none !important;
+  }
+
+  .zoom-trigger.revealed,
+  .zoom-exit.revealed {
+    transform: translateY(calc(-1 * var(--carousel-height)));
+  }
+
+  .nav-arrow {
+    display: none;
+  }
+
+  :root {
+    --ui-gap-x: 12px;
+    --ui-gap-y: 12px;
+  }
+  .pin-nav-btn {
+    height: 32px;
+    width: calc(50% - (72px) - var(--ui-gap-x));
+    padding: 0 calc(var(--ui-gap-x) / 2);
+    gap: 0;
+  }
+  .pin-nav-btn.prev {
+    left: var(--ui-gap-x);
+  }
+  .pin-nav-btn.next {
+    right: var(--ui-gap-x);
+  }
+
+  .pin-nav-label {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10px;
+  }
+}
