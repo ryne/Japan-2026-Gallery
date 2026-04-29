@@ -355,16 +355,18 @@ body,
   -webkit-user-drag: none;
 }
 
-/* Shimmer skeleton for loading state */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--color-surface) 25%,
-    var(--color-surface-2) 50%,
-    var(--color-surface) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.8s infinite linear;
+@keyframes loader-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+
+.animate-loader-fade {
+  animation: loader-fade-in 0.6s ease-out forwards;
+  opacity: 0; /* Start hidden */
 }
 
 /* ─── Shortcut Modal ─────────────────────────────────────────────────────── */
