@@ -97,28 +97,46 @@ export function CarouselStrip({
 
   // Sync Swiper position when activeIndex changes from external sources (arrows, keyboard)
   useEffect(() => {
-    // We also check for 'swiper.animating' to ensure we don't interrupt a momentum flick
-    if (!swiper || activeIndex === undefined || isSwiperDragging || swiper.animating) return;
+    if (!swiper || activeIndex === undefined || isSwiperDragging || slides.length === 0) return;
 
     // Only trigger a slideTo if the activeIndex prop itself has changed.
     // This prevents "snapback" when the user is just scrolling around.
     const hasIndexChanged = activeIndex !== lastActiveIndexRef.current;
 
-    if (hasIndexChanged) {
-      lastActiveIndexRef.current = activeIndex;
-      setIsSwiperDragging(false); // Reset just in case
+    const isInitialSync = lastActiveIndexRef.current === null;
 
+    if (hasIndexChanged || isInitialSync) {
+      // Force sync if it's the very first time
       const targetSlideIndex = slides.findIndex(
         (s) => s.type === "card" && s.index === activeIndex,
       );
+
       if (targetSlideIndex !== -1) {
-        // slideToLoop ensures we go to the correct real index in a looped carousel
-        swiper.slideToLoop(targetSlideIndex, 600);
+        lastActiveIndexRef.current = activeIndex;
+
+        if (isInitialSync) {
+          // Initialization sync: Swiper Loop mode needs the DOM to be fully settled
+          // to calculate centering correctly. We use requestAnimationFrame inside
+          // a 150ms timeout to ensure the browser has painted and measured slides
+          // before we perform the first snap.
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              if (swiper && !swiper.destroyed) {
+                swiper.update(); // Recalculate dimensions for centeredSlides logic
+                swiper.slideToLoop(targetSlideIndex, 0);
+              }
+            });
+          }, 150);
+        } else {
+          swiper.slideToLoop(targetSlideIndex, 600);
+        }
       }
     }
   }, [swiper, activeIndex, slides, isSwiperDragging]);
 
   // Pre-render the slides to keep the Swiper render loop as lean as possible
+  // CRITICAL: SwiperSlide must be a direct child of Swiper.
+  // We map them here directly to ensure Swiper detects them for loop/drag.
   const renderedSlides = useMemo(() => {
     return slides.map((slide) => {
       if (slide.type === "divider") {
@@ -146,7 +164,7 @@ export function CarouselStrip({
         </SwiperSlide>
       );
     });
-  }, [slides, activeIndex]); // Removed onSelect to prevent cache invalidation if parent re-renders
+  }, [slides, activeIndex, onSelect]);
 
   return (
     <div
@@ -177,7 +195,7 @@ export function CarouselStrip({
         mousewheel={{ forceToAxis: true }}
         roundLengths={true} // Prevents blurry text/images and sub-pixel jitter
         slidesPerView="auto"
-        spaceBetween={8}
+        spaceBetween={0}
         centeredSlides={true}
         loop={true}
         nested={true} // Better isolation for event bubbling
@@ -196,8 +214,6 @@ export function CarouselStrip({
         className={clsx("carousel-inner", { dragging: isSwiperDragging })}
         // Stop all pointer events from bubbling to the main swipe listener
         onPointerDown={(e) => e.stopPropagation()}
-        onPointerMove={(e) => e.stopPropagation()}
-        onPointerUp={(e) => e.stopPropagation()}
         aria-label="Media gallery"
       >
         {renderedSlides}
