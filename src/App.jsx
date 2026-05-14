@@ -36,6 +36,36 @@ export default function App() {
     manifest ?? [],
   );
 
+  const initialUrlParsed = useRef(false);
+
+  // ── URL Synchronization ──────────────────────────────────────────────────
+  // 1. Initial Load: Read ID from URL and sync state
+  useEffect(() => {
+    if (!manifest || flatItems.length === 0 || initialUrlParsed.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const slideId = params.get("id");
+
+    if (slideId !== null) {
+      const index = parseInt(slideId, 10);
+      if (!isNaN(index) && index >= 0 && index < flatItems.length) {
+        if (index !== activeIndex) {
+          setActiveIndex(index);
+        }
+      }
+    }
+    initialUrlParsed.current = true;
+  }, [manifest, flatItems.length, setActiveIndex, activeIndex]);
+
+  // 2. State Change: Update URL when activeIndex changes
+  useEffect(() => {
+    if (!manifest || !initialUrlParsed.current) return;
+
+    const url = new URL(window.location);
+    url.searchParams.set("id", activeIndex.toString());
+    window.history.replaceState(null, "", url.toString());
+  }, [activeIndex, manifest]);
+
   // ── Carousel auto-hide ─────────────────────────────────────────────────────
   const { revealed, reveal, hide, scheduleHide } = useCarouselReveal(isZoomed);
 
