@@ -212,6 +212,11 @@ body,
   transition: all 0s ease !important;
 }
 
+.carousel-inner .swiper-slide:hover .video-badge,
+.carousel-inner .swiper-slide.is-selected .video-badge {
+  opacity: 0.7;
+}
+
 .thumb-card img {
   width: 100%;
   height: 100%;
@@ -223,15 +228,20 @@ body,
 /* Video badge */
 .video-badge {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  background: rgba(0, 0, 0, 0.75);
+  top: 50%;
+  left: 50%;
+  width: 25px;
+  height: 25px;
+  box-shadow: 0 0 0 2px #fff;
+  background-color: rgba(0, 0, 0, 0.4);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  opacity: 0.4;
+  transition: all 0.3s ease;
 }
 
 /* Section divider label in the carousel */
@@ -595,7 +605,7 @@ body,
 @media (max-width: 640px) {
   :root {
     --carousel-peek: 48px;
-    --carousel-height: 91px;
+    --carousel-height: 92px;
   }
 
   * {
@@ -603,8 +613,8 @@ body,
   }
 
   .carousel-inner .swiper-slide {
-    max-width: 81px;
-    max-height: 81px;
+    max-width: 80px;
+    max-height: 80px;
   }
 
   .section-divider-label {
@@ -614,9 +624,9 @@ body,
   }
 
   .section-divider {
-    width: 81px;
-    max-width: 81px;
-    max-height: 81px;
+    width: 80px;
+    max-width: 80px;
+    max-height: 80px;
     padding: 0;
     gap: 10px;
   }
