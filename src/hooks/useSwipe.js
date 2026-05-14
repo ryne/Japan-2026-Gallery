@@ -33,7 +33,7 @@ export function useSwipe({
   const [direction, setDirection] = useState(null);
 
   const ref = useCallback((node) => {
-    if (node !== null) setTargetEl(node);
+    setTargetEl(node);
   }, []);
 
   // Keep callbacks fresh without triggering effect re-runs
@@ -177,15 +177,18 @@ export function useSwipe({
 
   useEffect(() => {
     if (!targetEl) return;
-    targetEl.addEventListener("pointerdown", onPointerDown);
-    targetEl.addEventListener("pointermove", onPointerMove);
-    targetEl.addEventListener("pointerup", onPointerUp);
-    targetEl.addEventListener("pointercancel", onPointerCancel);
+
+    const el = targetEl;
+    el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", onPointerUp);
+    el.addEventListener("pointercancel", onPointerCancel);
+
     return () => {
-      targetEl.removeEventListener("pointerdown", onPointerDown);
-      targetEl.removeEventListener("pointermove", onPointerMove);
-      targetEl.removeEventListener("pointerup", onPointerUp);
-      targetEl.removeEventListener("pointercancel", onPointerCancel);
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onPointerUp);
+      el.removeEventListener("pointercancel", onPointerCancel);
     };
   }, [targetEl, onPointerDown, onPointerMove, onPointerUp, onPointerCancel]);
 

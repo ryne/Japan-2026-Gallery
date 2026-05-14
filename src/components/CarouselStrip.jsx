@@ -113,18 +113,19 @@ export function CarouselStrip({
       if (targetSlideIndex !== -1) {
         lastActiveIndexRef.current = activeIndex;
 
-        // Always update Swiper's layout before sliding to ensure correct centering,
-        // especially with auto-width and centeredSlides.
-        swiper.update();
-
-        // For initial sync, use a small delay to allow the browser to fully render
-        // and for Swiper's loop clones to settle. Subsequent slides can be immediate.
-        const delay = isInitialSync ? 150 : 0;
-        setTimeout(() => {
-          if (swiper && !swiper.destroyed) {
-            swiper.slideToLoop(targetSlideIndex, isInitialSync ? 0 : 600);
-          }
-        }, delay);
+        if (isInitialSync) {
+          // Initial sync: Ensure Swiper calculates the loop and offsets after the DOM is ready.
+          // We use requestAnimationFrame to ensure Swiper is fully initiated and the
+          // browser has performed a layout pass before we snap to the correct slide.
+          requestAnimationFrame(() => {
+            if (swiper && !swiper.destroyed) {
+              swiper.update();
+              swiper.slideToLoop(targetSlideIndex, 0, false);
+            }
+          });
+        } else {
+          swiper.slideToLoop(targetSlideIndex, 600);
+        }
       }
     }
   }, [swiper, activeIndex, slides, isSwiperDragging]);
