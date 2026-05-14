@@ -106,7 +106,6 @@ export function CarouselStrip({
     const isInitialSync = lastActiveIndexRef.current === null;
 
     if (hasIndexChanged || isInitialSync) {
-      // Force sync if it's the very first time
       const targetSlideIndex = slides.findIndex(
         (s) => s.type === "card" && s.index === activeIndex,
       );
@@ -114,22 +113,18 @@ export function CarouselStrip({
       if (targetSlideIndex !== -1) {
         lastActiveIndexRef.current = activeIndex;
 
-        if (isInitialSync) {
-          // Initialization sync: Swiper Loop mode needs the DOM to be fully settled
-          // to calculate centering correctly. We use requestAnimationFrame inside
-          // a 150ms timeout to ensure the browser has painted and measured slides
-          // before we perform the first snap.
-          setTimeout(() => {
-            requestAnimationFrame(() => {
-              if (swiper && !swiper.destroyed) {
-                swiper.update(); // Recalculate dimensions for centeredSlides logic
-                swiper.slideToLoop(targetSlideIndex, 0);
-              }
-            });
-          }, 150);
-        } else {
-          swiper.slideToLoop(targetSlideIndex, 600);
-        }
+        // Always update Swiper's layout before sliding to ensure correct centering,
+        // especially with auto-width and centeredSlides.
+        swiper.update();
+
+        // For initial sync, use a small delay to allow the browser to fully render
+        // and for Swiper's loop clones to settle. Subsequent slides can be immediate.
+        const delay = isInitialSync ? 150 : 0;
+        setTimeout(() => {
+          if (swiper && !swiper.destroyed) {
+            swiper.slideToLoop(targetSlideIndex, isInitialSync ? 0 : 600);
+          }
+        }, delay);
       }
     }
   }, [swiper, activeIndex, slides, isSwiperDragging]);
