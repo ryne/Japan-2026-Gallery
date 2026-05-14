@@ -98,7 +98,7 @@ body,
   height: var(--carousel-height);
   background-color: rgba(0, 0, 0, 0.9);
   display: flex !important; /* Override swiper block if needed */
-  align-items: flex-start !important;
+  align-items: center !important;
   overflow: hidden;
   scrollbar-width: none; /* Firefox */
   border-top: 1px solid var(--color-border);
@@ -107,16 +107,23 @@ body,
   transition: all var(--transition-slide);
   will-change: transform, filter;
 }
+
+.carousel-inner .swiper-wrapper {
+  display: flex;
+  gap: 8px; /* Balanced spacing between all items */
+}
+
 .carousel-inner .swiper-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: auto !important;
+  max-height: 108px;
+  margin-right: 0 !important; /* Remove Swiper's one-sided margin in favor of gap */
   /* Crucial for high-speed flick performance */
   content-visibility: auto;
   contain-intrinsic-size: 108px 108px;
   transform: translateZ(0); /* Force GPU layer */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  align-content: center;
-  justify-items: center;
 }
 
 .carousel-inner::-webkit-scrollbar {
@@ -128,6 +135,10 @@ body,
 
 .carousel-inner:not(.dragging) {
   cursor: grab;
+}
+
+.swiper-wrapper {
+  align-items: center;
 }
 
 /* Tease strip — the 28px tab that stays visible */
@@ -173,35 +184,29 @@ body,
   overflow: hidden;
   position: relative;
   cursor: pointer;
+}
+
+.carousel-inner .swiper-slide {
+  transform-origin: center center;
+  transition: all 0.3s ease;
   opacity: 0.5;
-  transition: all 0.2s ease-in-out;
-  will-change: transform, opacity, filter;
+  will-change: opacity, filter;
   filter: brightness(0.5);
-  box-shadow: 0 0 0 rgba(0, 0, 0, 1);
+  border: 1px solid rgba(255, 255, 255, 0);
 }
 
-@media (hover: hover) {
-  .carousel-inner .swiper-slide {
-    transform-origin: center;
-    transition: transform 0.3s ease;
-  }
-  .carousel-inner .swiper-slide:hover {
-    transform: scale(1.1);
-  }
-  .thumb-card:hover {
-    box-shadow: 0 0 25px rgba(0, 0, 0, 1);
-    filter: brightness(1);
-    opacity: 1;
-  }
-  .thumb-card:active {
-    filter: brightness(1.2) saturate(1.5);
-  }
-}
-
-.thumb-card.active {
-  opacity: 1;
+.carousel-inner .swiper-slide:hover,
+.swiper-slide:has(.section-divider),
+.carousel-inner .swiper-slide.is-selected {
   filter: brightness(1);
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+  opacity: 1;
+  z-index: 999;
+}
+.carousel-inner .swiper-slide.is-selected {
+  border-color: rgba(255, 255, 255, 1);
+}
+.carousel-inner .swiper-slide:active {
+  filter: brightness(1.2) saturate(1.5);
 }
 
 .thumb-card img {

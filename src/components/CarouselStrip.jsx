@@ -31,13 +31,11 @@ export function CarouselStrip({
   onMouseEnter,
   onMouseLeave,
   onHide,
-  onNext,
-  onPrev,
 }) {
   // Add at the top of the component, alongside the existing refs
   const [swiper, setSwiper] = useState(null);
   const [isSwiperDragging, setIsSwiperDragging] = useState(false);
-  const lastActiveIndexRef = useRef(activeIndex);
+  const lastActiveIndexRef = useRef(null);
 
   const {
     ref: peekRef,
@@ -48,8 +46,6 @@ export function CarouselStrip({
   } = useSwipe({
     onUp: onMouseEnter, // mapped to reveal
     onDown: onHide,
-    onNext: onNext,
-    onPrev: onPrev,
     onTap: onMouseEnter,
     threshold: 40,
   });
@@ -139,7 +135,7 @@ export function CarouselStrip({
 
       const isActive = slide.index === activeIndex;
       return (
-        <SwiperSlide key={slide.key} className="w-auto">
+        <SwiperSlide key={slide.key} className={clsx("w-auto", { "is-selected": isActive })}>
           <div role="option" aria-selected={isActive}>
             <ThumbCard
               item={slide.item}
@@ -181,7 +177,7 @@ export function CarouselStrip({
         mousewheel={{ forceToAxis: true }}
         roundLengths={true} // Prevents blurry text/images and sub-pixel jitter
         slidesPerView="auto"
-        spaceBetween={6}
+        spaceBetween={8}
         centeredSlides={true}
         loop={true}
         nested={true} // Better isolation for event bubbling
@@ -198,11 +194,10 @@ export function CarouselStrip({
         watchSlidesProgress={true}
         touchStartPreventDefault={false}
         className={clsx("carousel-inner", { dragging: isSwiperDragging })}
-        // Only stop propagation if we are touching a thumbnail to allow
-        // vertical reveal gestures to bubble from the carousel area
-        onPointerDown={(e) => {
-          if (e.target.closest(".thumb-card")) e.stopPropagation();
-        }}
+        // Stop all pointer events from bubbling to the main swipe listener
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
         aria-label="Media gallery"
       >
         {renderedSlides}

@@ -26,11 +26,15 @@ export function useSwipe({
   velocityMin = 0.3,
   maxOffset = 80,
 } = {}) {
-  const ref = useRef(null);
+  const [targetEl, setTargetEl] = useState(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [swipePower, setSwipePower] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [direction, setDirection] = useState(null);
+
+  const ref = useCallback((node) => {
+    if (node !== null) setTargetEl(node);
+  }, []);
 
   // Keep callbacks fresh without triggering effect re-runs
   const callbacks = useRef({ onNext, onPrev, onUp, onDown, onTap });
@@ -154,8 +158,7 @@ export function useSwipe({
           else callbacks.current.onPrev?.();
         }
       } else if (dir === "vertical") {
-        // Lower threshold for vertical reveal to make it feel snappier
-        if (vVelocity > velocityMin || Math.abs(dy) >= threshold - 20) {
+        if (vVelocity > velocityMin || Math.abs(dy) >= threshold) {
           if (dy < 0) callbacks.current.onUp?.();
           else callbacks.current.onDown?.();
         }
@@ -173,19 +176,18 @@ export function useSwipe({
   }, []);
 
   useEffect(() => {
-    const target = ref.current;
-    if (!target) return;
-    target.addEventListener("pointerdown", onPointerDown);
-    target.addEventListener("pointermove", onPointerMove);
-    target.addEventListener("pointerup", onPointerUp);
-    target.addEventListener("pointercancel", onPointerCancel);
+    if (!targetEl) return;
+    targetEl.addEventListener("pointerdown", onPointerDown);
+    targetEl.addEventListener("pointermove", onPointerMove);
+    targetEl.addEventListener("pointerup", onPointerUp);
+    targetEl.addEventListener("pointercancel", onPointerCancel);
     return () => {
-      target.removeEventListener("pointerdown", onPointerDown);
-      target.removeEventListener("pointermove", onPointerMove);
-      target.removeEventListener("pointerup", onPointerUp);
-      target.removeEventListener("pointercancel", onPointerCancel);
+      targetEl.removeEventListener("pointerdown", onPointerDown);
+      targetEl.removeEventListener("pointermove", onPointerMove);
+      targetEl.removeEventListener("pointerup", onPointerUp);
+      targetEl.removeEventListener("pointercancel", onPointerCancel);
     };
-  }, [onPointerDown, onPointerMove, onPointerUp, onPointerCancel]);
+  }, [targetEl, onPointerDown, onPointerMove, onPointerUp, onPointerCancel]);
 
   return { ref, dragOffset, isDragging, swipePower, direction };
 }
