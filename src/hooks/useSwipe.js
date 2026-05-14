@@ -27,56 +27,63 @@ export function useSwipe({
   maxOffset = 80,
 } = {}) {
   const ref = useRef(null);
-  const state = useRef({
-    active: false,
-    locked: false, // true once direction is committed
-    direction: null, // 'horizontal' or 'vertical'
-    startX: 0,
-    startY: 0,
-    startTime: 0,
-    pointerId: null,
-  });
-
   const [dragOffset, setDragOffset] = useState(0);
   const [swipePower, setSwipePower] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [direction, setDirection] = useState(null);
 
+  // Keep callbacks fresh without triggering effect re-runs
+  const callbacks = useRef({ onNext, onPrev, onUp, onDown, onTap });
+  useEffect(() => {
+    callbacks.current = { onNext, onPrev, onUp, onDown, onTap };
+  }, [onNext, onPrev, onUp, onDown, onTap]);
+
   /**
    * Rubber-band clamp: moves freely up to `maxOffset`, then compresses
    * logarithmically beyond that so it always feels like there's resistance.
    */
-  const rubberBand = (x) => {
-    const sign = x < 0 ? -1 : 1;
-    const abs = Math.abs(x);
-    if (abs <= maxOffset) return x;
-    // Beyond cap: logarithmic decay
-    const overflow = abs - maxOffset;
-    const compressed = maxOffset + Math.log1p(overflow) * 12;
-    return sign * Math.min(compressed, maxOffset * 1.5);
-  };
+  const rubberBand = useCallback(
+    (x) => {
+      const sign = x < 0 ? -1 : 1;
+      const abs = Math.abs(x);
+      if (abs <= maxOffset) return x;
+      // Beyond cap: logarithmic decay
+      const overflow = abs - maxOffset;
+      const compressed = maxOffset + Math.log1p(overflow) * 12;
+      return sign * Math.min(compressed, maxOffset * 1.5);
+    },
+    [maxOffset],
+  );
+
+  const state = useRef({
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    isTracking: false,
+    isLocked: false,
+    currentDirection: null,
+  });
 
   const onPointerDown = useCallback((e) => {
+    // Only left click
     if (e.button !== 0 && e.pointerType === "mouse") return;
-    if (state.current.active) return;
-
-    // On mobile, ignore multi-touch for the swipe hook to allow pinch-to-zoom
+    // Ignore multi-touch to allow pinch-to-zoom in PresentationView
     if (e.pointerType === "touch" && !e.isPrimary) return;
+    // CRITICAL: Ignore anything inside the carousel strip
+    if (e.target.closest(".carousel-inner, .vjs-control-bar, .media-controls")) {
+      return;
+    }
 
-    // Ignore if clicking on video controls or big play button
-    if (e.target.closest(".vjs-control-bar, .vjs-big-play-button, .media-controls")) return;
+    state.current.startX = e.clientX;
+    state.current.startY = e.clientY;
+    state.current.startTime = performance.now();
+    state.current.isTracking = true;
+    state.current.isLocked = false;
+    state.current.currentDirection = null;
 
-    state.current = {
-      active: true,
-      locked: false,
-      direction: null,
-      startX: e.clientX,
-      startY: e.clientY,
-      startTime: performance.now(),
-      pointerId: e.pointerId,
-    };
+    // Start capturing the pointer immediately
+    e.currentTarget.setPointerCapture(e.pointerId);
 
-    // We no longer call setPointerCapture here to allow other listeners to coexist.
     setDragOffset(0);
     setSwipePower(0);
     setIsDragging(false);
@@ -85,79 +92,80 @@ export function useSwipe({
 
   const onPointerMove = useCallback(
     (e) => {
-      if (!state.current.active || e.pointerId !== state.current.pointerId) return;
+      if (!state.current.isTracking) return;
 
       const dx = e.clientX - state.current.startX;
       const dy = e.clientY - state.current.startY;
 
-      if (!state.current.locked) {
+      if (!state.current.isLocked) {
         const adx = Math.abs(dx);
         const ady = Math.abs(dy);
-        if (adx < 10 && ady < 10) return; // dead zone
+        if (adx < 5 && ady < 5) return; // Dead zone
 
-        // Locked to the dominant axis
-        if (ady > adx) {
-          state.current.direction = "vertical";
-          setDirection("vertical");
-        } else {
-          state.current.direction = "horizontal";
-          setDirection("horizontal");
-        }
-
-        state.current.locked = true;
+        state.current.isLocked = true;
+        state.current.currentDirection = ady > adx ? "vertical" : "horizontal";
+        setDirection(state.current.currentDirection);
         setIsDragging(true);
-        // Only capture once we are sure it's a swipe
-        e.currentTarget.setPointerCapture(e.pointerId);
       }
 
-      if (state.current.direction === "horizontal") {
+      if (state.current.currentDirection === "horizontal") {
+        // Block browser-native horizontal gestures (like 'back') if we are swiping
+        if (e.cancelable) e.preventDefault();
+        // Apply rubber-band for a high-end "weighted" feel
         setDragOffset(rubberBand(dx));
         setSwipePower(Math.min(Math.abs(dx) / threshold, 1));
-      } else if (state.current.direction === "vertical") {
+      } else if (state.current.currentDirection === "vertical") {
+        if (e.cancelable) e.preventDefault();
         setDragOffset(dy);
         setSwipePower(Math.min(Math.abs(dy) / threshold, 1));
       }
     },
-    [threshold], // rubberBand is pure, maxOffset is closure-stable
+    [threshold, rubberBand],
   );
 
   const onPointerUp = useCallback(
     (e) => {
-      if (!state.current.active || e.pointerId !== state.current.pointerId) return;
+      if (!state.current.isTracking) return;
 
       const dx = e.clientX - state.current.startX;
       const dy = e.clientY - state.current.startY;
-      const dt = Math.max(performance.now() - state.current.startTime, 1);
-
-      // Determine if this was a quick tap instead of a swipe/drag
-      const isTap = Math.abs(dx) < 30 && Math.abs(dy) < 30 && dt < 250;
+      const dt = performance.now() - state.current.startTime;
+      const dir = state.current.currentDirection;
 
       const velocity = Math.abs(dx) / dt;
       const vVelocity = Math.abs(dy) / dt;
+      const isTap = Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 200;
 
-      state.current.active = false;
+      // Reset state first
+      state.current.isTracking = false;
       setDragOffset(0);
       setSwipePower(0);
       setIsDragging(false);
       setDirection(null);
 
       if (isTap) {
-        onTap?.();
-      } else if (state.current.direction === "vertical") {
-        if (vVelocity >= velocityMin || Math.abs(dy) >= threshold) {
-          dy < 0 ? onUp?.() : onDown?.();
+        callbacks.current.onTap?.();
+        return;
+      }
+
+      if (dir === "horizontal") {
+        if (velocity > velocityMin || Math.abs(dx) >= threshold) {
+          if (dx < 0) callbacks.current.onNext?.();
+          else callbacks.current.onPrev?.();
         }
-      } else if (state.current.direction === "horizontal") {
-        if (velocity >= velocityMin || Math.abs(dx) >= threshold) {
-          dx < 0 ? onNext?.() : onPrev?.();
+      } else if (dir === "vertical") {
+        // Lower threshold for vertical reveal to make it feel snappier
+        if (vVelocity > velocityMin || Math.abs(dy) >= threshold - 20) {
+          if (dy < 0) callbacks.current.onUp?.();
+          else callbacks.current.onDown?.();
         }
       }
     },
-    [onNext, onPrev, onUp, onDown, onTap, threshold, velocityMin],
+    [threshold, velocityMin],
   );
 
   const onPointerCancel = useCallback(() => {
-    state.current.active = false;
+    state.current.isTracking = false;
     setDragOffset(0);
     setSwipePower(0);
     setIsDragging(false);
@@ -165,26 +173,17 @@ export function useSwipe({
   }, []);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    // Reset internal state when attaching to ensure fresh start
-    state.current.active = false;
-    state.current.locked = false;
-    setDragOffset(0);
-    setSwipePower(0);
-    setIsDragging(false);
-    setDirection(null);
-
-    el.addEventListener("pointerdown", onPointerDown);
-    el.addEventListener("pointermove", onPointerMove);
-    el.addEventListener("pointerup", onPointerUp);
-    el.addEventListener("pointercancel", onPointerCancel);
+    const target = ref.current;
+    if (!target) return;
+    target.addEventListener("pointerdown", onPointerDown);
+    target.addEventListener("pointermove", onPointerMove);
+    target.addEventListener("pointerup", onPointerUp);
+    target.addEventListener("pointercancel", onPointerCancel);
     return () => {
-      el.removeEventListener("pointerdown", onPointerDown);
-      el.removeEventListener("pointermove", onPointerMove);
-      el.removeEventListener("pointerup", onPointerUp);
-      el.removeEventListener("pointercancel", onPointerCancel);
+      target.removeEventListener("pointerdown", onPointerDown);
+      target.removeEventListener("pointermove", onPointerMove);
+      target.removeEventListener("pointerup", onPointerUp);
+      target.removeEventListener("pointercancel", onPointerCancel);
     };
   }, [onPointerDown, onPointerMove, onPointerUp, onPointerCancel]);
 

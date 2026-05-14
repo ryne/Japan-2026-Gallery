@@ -40,12 +40,15 @@ export default function App() {
   const { revealed, reveal, hide, scheduleHide } = useCarouselReveal(isZoomed);
 
   const handleTap = useCallback(() => {
+    // 1. Play/Pause toggle for videos
     if (activeItem?.type === "video" && videoRef.current) {
       const v = videoRef.current;
       if (v.paused) v.play().catch(() => {});
       else v.pause();
     }
-  }, [activeItem]);
+    // 2. Hide carousel when tapping the main view
+    scheduleHide(600);
+  }, [activeItem, scheduleHide]);
 
   // ── Swipe state lifted for NavArrow synchronization ────────────────────────
   const handleNext = useCallback(() => {
@@ -319,6 +322,8 @@ export default function App() {
         onMouseEnter={reveal}
         onMouseLeave={() => scheduleHide(600)}
         onHide={hide}
+        onNext={() => navigate(1)}
+        onPrev={() => navigate(-1)}
       />
 
       {!isZoomed && (

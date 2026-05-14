@@ -94,15 +94,12 @@ body,
 
 /* The inner scroll row */
 .carousel-inner {
+  width: 100%;
   height: var(--carousel-height);
   background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  display: flex !important; /* Override swiper block if needed */
+  align-items: flex-start !important;
+  overflow: hidden;
   scrollbar-width: none; /* Firefox */
   border-top: 1px solid var(--color-border);
   backdrop-filter: blur(50px);
@@ -110,12 +107,27 @@ body,
   transition: all var(--transition-slide);
   will-change: transform, filter;
 }
+.carousel-inner .swiper-slide {
+  /* Crucial for high-speed flick performance */
+  content-visibility: auto;
+  contain-intrinsic-size: 108px 108px;
+  transform: translateZ(0); /* Force GPU layer */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  justify-items: center;
+}
+
 .carousel-inner::-webkit-scrollbar {
   display: none;
 }
-/* Disable snapping during active drag/momentum to allow smooth "unwinding" */
 .carousel-inner.dragging {
-  scroll-snap-type: none;
+  cursor: grabbing;
+}
+
+.carousel-inner:not(.dragging) {
+  cursor: grab;
 }
 
 /* Tease strip — the 28px tab that stays visible */
@@ -156,11 +168,10 @@ body,
 /* ─── Carousel thumbnail card ────────────────────────────────────────────── */
 .thumb-card {
   flex: 0 0 auto;
-  width: 108px;
-  height: 108px;
+  width: 108px !important;
+  height: 108px !important;
   overflow: hidden;
   position: relative;
-  scroll-snap-align: center;
   cursor: pointer;
   opacity: 0.5;
   transition: all 0.2s ease-in-out;
@@ -170,9 +181,14 @@ body,
 }
 
 @media (hover: hover) {
-  .thumb-card:hover {
-    transform: scale(1.1);
+  .carousel-inner .swiper-slide {
     transform-origin: center;
+    transition: transform 0.3s ease;
+  }
+  .carousel-inner .swiper-slide:hover {
+    transform: scale(1.1);
+  }
+  .thumb-card:hover {
     box-shadow: 0 0 25px rgba(0, 0, 0, 1);
     filter: brightness(1);
     opacity: 1;
@@ -221,9 +237,9 @@ body,
   gap: 4px;
   opacity: 1;
   user-select: none;
-  width: 130px;
+  height: var(--carousel-height);
+  width: 130px !important;
   text-align: center;
-  scroll-snap-align: center;
 }
 .section-divider-line {
   width: 1px;
@@ -279,6 +295,7 @@ body,
 
 .swipe-hint {
   display: none;
+  pointer-events: none;
 }
 
 /* ─── Zoom Mechanics ─────────────────────────────────────────────────────── */

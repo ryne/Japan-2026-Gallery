@@ -272,7 +272,6 @@ export function PresentationView({
         clearTimeout(lastTapTimerRef.current);
         handleDoubleInteraction(e);
         lastTapRef.current = { time: -1000, x: 0, y: 0 };
-        e.stopPropagation();
         if (e.cancelable) e.preventDefault();
         return;
       } else {
@@ -296,7 +295,6 @@ export function PresentationView({
       clearTimeout(lastTapTimerRef.current);
       handleDoubleInteraction(e);
       lastTapRef.current = { time: -1000, x: 0, y: 0 };
-      e.stopPropagation();
       if (e.cancelable) e.preventDefault();
       return;
     } else {
@@ -410,6 +408,13 @@ export function PresentationView({
   const showHint = isDragging && direction === "horizontal" && swipePower > 0.1;
   const hintDir = dragOffset < 0 ? "next" : "prev";
 
+  // Calculate swipe feedback: subtle movement and opacity fade
+  const isHorizontalSwipe = !isZoomed && isDragging && direction === "horizontal";
+  // Normalize power based on the rubber-banded dragOffset limit (~80px)
+  const feedbackPower = Math.min(Math.abs(dragOffset) / 80, 1);
+  const swipeMoveX = isHorizontalSwipe ? (dragOffset < 0 ? -10 : 10) * feedbackPower : 0;
+  const swipeOpacity = isHorizontalSwipe ? 1 - 0.3 * feedbackPower : 1;
+
   // Calculate a scale factor that ensures the visual width is always a flat integer
   const snappedScale =
     isZoomed && naturalSize
@@ -419,13 +424,7 @@ export function PresentationView({
         : scale;
 
   return (
-    <div
-      className="presentation"
-      onPointerDown={(e) => {
-        if (!e.target.closest(".vjs-control-bar, .vjs-big-play-button, .media-controls"))
-          onMediaClick();
-      }}
-    >
+    <div className="presentation">
       {/* Centered loader icon while the full-res asset loads */}
       {loading && (
         <div className="animate-loader-fade pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
@@ -485,8 +484,16 @@ export function PresentationView({
           inset: 0,
           display: "flex",
           alignItems: "center",
+          overflow: "hidden",
           justifyContent: "center",
-          cursor: isDragging ? "grabbing" : "grab",
+          // Ensure cursor reflects drag state accurately
+          cursor: isZoomed
+            ? isDraggingZoom
+              ? "grabbing"
+              : "grab"
+            : isDragging
+              ? "grabbing"
+              : "grab",
           touchAction: "none",
           zIndex: 0,
         }}
@@ -506,11 +513,12 @@ export function PresentationView({
               maxWidth: pixelSize ? "none" : "100%",
               maxHeight: pixelSize ? "none" : "100%",
               objectFit: "contain",
-              opacity: visible ? 1 : 0,
-              transform: "none",
-              transition: isDragging
-                ? "opacity 0.35s ease"
-                : "opacity 0.35s ease, transform 0.35s cubic-bezier(0.19, 1, 0.22, 1)",
+              opacity: (visible ? 1 : 0) * swipeOpacity,
+              transform: `translate3d(${swipeMoveX}px, 0, 0)`,
+              transition:
+                isDragging && direction === "horizontal"
+                  ? "" // No transform transition while dragging
+                  : "opacity 0.35s ease, transform 0.35s cubic-bezier(0.19, 1, 0.22, 1)",
               userSelect: "none",
               WebkitUserDrag: "none",
               pointerEvents: "none",
@@ -523,8 +531,12 @@ export function PresentationView({
             style={{
               width: pixelSize ? `${pixelSize.width}px` : "100%",
               height: pixelSize ? `${pixelSize.height}px` : "100%",
-              opacity: visible ? 1 : 0,
-              transition: "opacity 0.35s ease",
+              opacity: (visible ? 1 : 0) * swipeOpacity,
+              transform: `translate3d(${swipeMoveX}px, 0, 0)`,
+              transition:
+                isDragging && direction === "horizontal"
+                  ? ""
+                  : "opacity 0.35s ease, transform 0.35s cubic-bezier(0.19, 1, 0.22, 1)",
               "--video-controls-margin": videoControlsMargin,
             }}
           >
