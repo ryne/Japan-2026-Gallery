@@ -3,23 +3,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Google Fonts fallback already loaded via <link> in index.html ─────── */
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
 
 :root {
   --color-bg: #050507;
   --color-surface: #0a0a0f;
-  --color-surface-2: #111118;
   --color-border: rgba(255, 255, 255, 0.07);
-  --color-gold: #d4a853;
-  --color-gold-dim: rgba(212, 168, 83, 0.15);
   --color-text: #e8e8f0;
-  --color-muted: #8b8b9e; /* Original value */
+  --color-muted: #8b8b9e;
   --carousel-height: 120px;
-  --carousel-peek: 66px; /* visible "tease" strip when hidden */
-  --transition-slide: 0.42s cubic-bezier(0.19, 1, 0.22, 1);
+  --carousel-peek: 66px;
+  --transition-main: 0.3s ease;
   --ui-gap-x: 32px;
   --ui-gap-y: 24px;
 }
+
+/* ─── Global Resets ──────────────────────────────────────────────────────── */
 
 *,
 *::before,
@@ -52,254 +51,23 @@ body,
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 2px;
 }
 
-/* ─── Carousel strip ─────────────────────────────────────────────────────── */
-.carousel-strip {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(var(--carousel-height) + var(--carousel-peek));
-  /* Start translated so only the peek strip is visible */
-  transform: translateY(calc(var(--carousel-height)));
-  transition:
-    transform var(--transition-slide),
-    opacity 0.3s ease;
-  z-index: 50;
-  will-change: transform, opacity;
-}
+/* ─── Presentation: Main View ────────────────────────────────────────────── */
 
-.carousel-strip.revealed {
-  transform: translateY(0);
-  backdrop-filter: blur(20px);
-}
-
-/* Hide visually during zoom without unmounting to preserve scroll state */
-.carousel-strip.is-zoomed,
-.pin-nav-btn.is-zoomed {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* The inner scroll row */
-.carousel-inner {
-  width: 100%;
-  height: var(--carousel-height);
-  background-color: rgba(0, 0, 0, 0.9);
-  /* Removed display:flex to avoid interfering with Swiper's internal container layout */
-  overflow: hidden;
-  scrollbar-width: none; /* Firefox */
-  border-top: 1px solid var(--color-border);
-  transition: all var(--transition-slide);
-  will-change: transform, filter;
-}
-
-.carousel-inner .swiper-wrapper {
-  display: flex;
-}
-
-.carousel-inner .swiper-slide {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  max-height: 108px;
-  max-width: 108px;
-  content-visibility: auto;
-  contain-intrinsic-size: 108px 108px;
-  transform: translateZ(0); /* Force GPU layer */
-}
-
-.carousel-inner::-webkit-scrollbar {
-  display: none;
-}
-.carousel-inner.dragging {
-  cursor: grabbing;
-}
-
-.carousel-inner:not(.dragging) {
-  cursor: grab;
-}
-
-.swiper-wrapper {
-  align-items: center;
-}
-
-/* Tease strip — the 28px tab that stays visible */
-.carousel-peek-bar {
-  height: var(--carousel-peek);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
-  backdrop-filter: blur(0);
-  touch-action: none;
-  cursor: pointer;
-}
-
-.carousel-peek-handle {
-  display: block;
-  width: 36px;
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 1); /* White base, opacity handled by JS */
-  box-shadow: 0 2px rgba(0, 0, 0, 0.4);
-  transform-origin: center center;
-  will-change: transform, opacity;
-}
-
-.carousel-peek-handle:not(.is-dragging) {
-  transition:
-    transform 0.3s cubic-bezier(0.19, 1, 0.22, 1),
-    opacity 0.3s ease;
-}
-
-.carousel-strip.revealed .carousel-peek-bar {
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.7) 100%);
-  backdrop-filter: blur(20px);
-}
-
-/* ─── Carousel thumbnail card ────────────────────────────────────────────── */
-.thumb-card {
-  flex: 0 0 auto;
-  width: 108px !important;
-  height: 108px !important;
-  overflow: hidden;
-  position: relative;
-  cursor: pointer;
-}
-
-.carousel-inner .swiper-slide {
-  transform-origin: center center;
-  transition: all 0.3s ease;
-  opacity: 0.5;
-  will-change: opacity, filter;
-  filter: brightness(0.5);
-  border: 2px solid rgba(255, 255, 255, 0);
-  box-sizing: border-box;
-  transform: translateY(2px);
-}
-
-.carousel-inner .swiper-slide:hover,
-.swiper-slide:has(.section-divider),
-.carousel-inner .swiper-slide.is-selected {
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(0px);
-  filter: brightness(1);
-  opacity: 1;
-}
-.swiper-slide:has(.section-divider) {
-  border-color: transparent !important;
-}
-.carousel-inner .swiper-slide.is-selected {
-  border-color: rgba(255, 255, 255, 0.7);
-  transform: translateY(-2px);
-}
-.carousel-inner .swiper-slide:active {
-  filter: brightness(1.2) saturate(1.5);
-  border-color: #fff;
-  transition: all 0s ease !important;
-}
-
-.carousel-inner .swiper-slide:hover .video-badge,
-.carousel-inner .swiper-slide.is-selected .video-badge {
-  opacity: 0.7;
-}
-
-.thumb-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: opacity 0.3s ease;
-}
-
-/* Video badge */
-.video-badge {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 25px;
-  height: 25px;
-  box-shadow: 0 0 0 2px #fff;
-  background-color: rgba(0, 0, 0, 0.4);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  transform: translate(-50%, -50%);
-  opacity: 0.4;
-  transition: all 0.3s ease;
-}
-
-/* Section divider label in the carousel */
-.section-divider {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 10px;
-  gap: 10px;
-  opacity: 1;
-  user-select: none;
-  text-align: center;
-  max-width: 108px;
-  max-height: 108px;
-}
-.section-divider-line {
-  width: 1px;
-  height: 48px;
-  background: var(--color-border);
-}
-.section-divider-label {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
-  padding: 0 12px;
-  text-transform: uppercase;
-  color: #fff;
-  opacity: 0.7;
-}
-
-/* ─── Tooltip ────────────────────────────────────────────────────────────── */
-.tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(5, 5, 7, 0.95);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 5px 9px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 10px;
-  color: var(--color-text);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  will-change: opacity;
-  z-index: 60;
-  backdrop-filter: blur(8px);
-}
-
-.thumb-card:hover .tooltip {
-  opacity: 1;
-}
-
-/* ─── Presentation area ──────────────────────────────────────────────────── */
 .presentation {
   position: fixed;
   inset: 0;
@@ -310,12 +78,26 @@ body,
   touch-action: none;
 }
 
-.swipe-hint {
-  display: none;
+/* ─── Presentation: Media Info ───────────────────────────────────────────── */
+
+.media-info {
+  position: fixed;
+  top: var(--ui-gap-y);
+  left: var(--ui-gap-x);
+  z-index: 2001;
   pointer-events: none;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  padding: 12px 16px;
 }
 
-/* ─── Zoom Mechanics ─────────────────────────────────────────────────────── */
+.media-info-right {
+  text-align: left;
+  margin-top: 6px;
+}
+
+/* ─── Presentation: UI Controls ──────────────────────────────────────────── */
+
 .zoom-action-btn {
   position: fixed;
   top: var(--ui-gap-y);
@@ -331,9 +113,13 @@ body,
   justify-content: center;
   cursor: pointer;
   backdrop-filter: blur(10px);
-  transition: all 0.2s ease;
+  transition:
+    transform var(--transition-main),
+    background-color var(--transition-main),
+    border-color var(--transition-main);
   will-change: transform, background-color, border-color;
 }
+
 .zoom-action-btn:hover {
   background: rgba(0, 0, 0, 0.8);
   border-color: #fff;
@@ -356,40 +142,50 @@ body,
   right: var(--ui-gap-x);
 }
 
-.zoom-overlay {
+.nav-arrow {
   position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: #000;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 44px;
+  height: 78px;
+  max-height: calc(100vh - 320px);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* Prevent scrollbars during transforms */
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
   transition:
-    opacity 0.4s ease,
-    visibility 0.4s;
+    transform var(--transition-main),
+    background-color var(--transition-main),
+    border-color var(--transition-main);
+  will-change: transform, background-color, border-color;
 }
 
-.zoom-overlay.active {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
+.nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: #fff;
+  transform: translateY(-50%) scale(1.05);
 }
 
-.zoom-overlay img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
+.nav-arrow:active {
+  filter: brightness(10);
 }
 
-/* ─── Shortcut Modal ─────────────────────────────────────────────────────── */
+.nav-arrow svg {
+  stroke: #fff;
+}
+
+.swipe-hint {
+  display: none;
+  pointer-events: none;
+}
+
+/* ─── Presentation: Shortcut Modal ───────────────────────────────────────── */
+
 .shortcut-modal-overlay {
   position: fixed;
   inset: 0;
@@ -409,7 +205,7 @@ body,
   max-width: 420px;
   width: 90%;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  animation: scaleIn 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+  animation: scaleIn var(--transition-main);
   will-change: transform, opacity;
 }
 
@@ -451,114 +247,6 @@ body,
   opacity: 0.8;
 }
 
-/* ─── Media info overlay ─────────────────────────────────────────────────── */
-.media-info {
-  position: fixed;
-  top: var(--ui-gap-y);
-  left: var(--ui-gap-x);
-  transform: none;
-  z-index: 2001; /* Ensure it's above the zoom overlay */
-  pointer-events: none;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 12px 16px;
-}
-
-.media-info-right {
-  text-align: left;
-  margin-top: 6px;
-}
-
-/* ─── Navigation arrows ──────────────────────────────────────────────────── */
-.nav-arrow {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
-  width: 44px;
-  height: 78px;
-  max-height: calc(100vh - 320px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: all 0.2s ease;
-  will-change: transform, background-color, border-color;
-}
-.nav-arrow:hover {
-  background: rgba(0, 0, 0, 0.8);
-  border-color: #fff;
-  transform: translateY(-50%) scale(1.05);
-}
-.nav-arrow:active {
-  filter: brightness(10);
-}
-.nav-arrow svg {
-  stroke: #fff;
-}
-
-/* ─── Pin navigation ─────────────────────────────────────────────────────── */
-.pin-nav-btn {
-  position: fixed;
-  bottom: calc(var(--carousel-peek) / 8);
-  z-index: 60;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    transform var(--transition-slide);
-  will-change: transform, background-color, border-color;
-  color: rgba(255, 255, 255, 0.7);
-}
-.pin-nav-btn:hover {
-  background: rgba(0, 0, 0, 0.4);
-  border-color: #fff;
-  color: #fff;
-}
-
-/* Move up in sync with the carousel reveal */
-.pin-nav-btn.revealed {
-  transform: translateY(calc(-1 * var(--carousel-height)));
-}
-
-.pin-nav-btn svg {
-  stroke: currentColor;
-}
-
-.pin-nav-btn.prev {
-  left: var(--ui-gap-x);
-}
-.pin-nav-btn.next {
-  right: var(--ui-gap-x);
-  flex-direction: row-reverse;
-}
-
-.pin-nav-label {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 500;
-}
-
-/* ─── Keyboard hint ──────────────────────────────────────────────────────── */
 .kbd {
   display: inline-flex;
   align-items: center;
@@ -574,7 +262,42 @@ body,
   background: var(--color-surface);
 }
 
-/* ─── Video Player Hacks ─────────────────────────────────────────────────── */
+/* ─── Presentation: Zoom Overlay ─────────────────────────────────────────── */
+
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #000;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--transition-main),
+    visibility var(--transition-main);
+}
+
+.zoom-overlay.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.zoom-overlay img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ─── Presentation: Video Player Overrides ────────────────────────────────── */
 
 .video-js {
   background: transparent !important;
@@ -589,47 +312,339 @@ body,
   margin-left: auto !important;
   margin-right: auto !important;
   margin-bottom: var(--video-controls-margin, 0px) !important;
-  transition: all 0.3s ease;
+  transition:
+    transform var(--transition-main),
+    opacity var(--transition-main),
+    background-color var(--transition-main);
   border-radius: 0;
   background: rgba(0, 0, 0, 0.7) !important;
   backdrop-filter: blur(20px);
 }
+
 .media-minimal-skin.media-minimal-skin--video {
   border: none !important;
   border-radius: 0 !important;
 }
+
 .media-overlay {
   display: none;
 }
+
+/* ─── Carousel: Container ────────────────────────────────────────────────── */
+
+.carousel-strip {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--carousel-height) + var(--carousel-peek));
+  transform: translateY(var(--carousel-height));
+  transition:
+    transform var(--transition-main),
+    opacity var(--transition-main);
+  z-index: 50;
+  will-change: transform, opacity;
+}
+
+.carousel-strip.revealed {
+  transform: translateY(0);
+  backdrop-filter: blur(20px);
+}
+
+.carousel-strip.is-zoomed,
+.pin-nav-btn.is-zoomed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─── Carousel: Navigation Buttons ───────────────────────────────────────── */
+
+.pin-nav-btn {
+  position: fixed;
+  bottom: calc(var(--carousel-peek) / 8);
+  z-index: 60;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition:
+    background-color var(--transition-main),
+    border-color var(--transition-main),
+    color var(--transition-main),
+    transform var(--transition-main);
+  will-change: transform, background-color, border-color;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pin-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: #fff;
+  color: #fff;
+}
+
+.pin-nav-btn.revealed {
+  transform: translateY(calc(-1 * var(--carousel-height)));
+}
+
+.pin-nav-btn svg {
+  stroke: currentColor;
+}
+
+.pin-nav-btn.prev {
+  left: var(--ui-gap-x);
+}
+
+.pin-nav-btn.next {
+  right: var(--ui-gap-x);
+  flex-direction: row-reverse;
+}
+
+.pin-nav-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
+/* ─── Carousel: Peek Bar ─────────────────────────────────────────────────── */
+
+.carousel-peek-bar {
+  height: var(--carousel-peek);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+  backdrop-filter: blur(0);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.carousel-peek-handle {
+  display: block;
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px rgba(0, 0, 0, 0.4);
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.carousel-peek-handle:not(.is-dragging) {
+  transition:
+    transform var(--transition-main),
+    opacity var(--transition-main);
+}
+
+.carousel-strip.revealed .carousel-peek-bar {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.7) 100%);
+  backdrop-filter: blur(20px);
+}
+
+/* ─── Carousel: Swiper & Items ───────────────────────────────────────────── */
+
+.carousel-inner {
+  width: 100%;
+  height: var(--carousel-height);
+  background-color: rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  scrollbar-width: none;
+  border-top: 1px solid var(--color-border);
+  transition:
+    transform var(--transition-main),
+    filter var(--transition-main);
+  will-change: transform, filter;
+}
+
+.carousel-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-inner.dragging {
+  cursor: grabbing;
+}
+
+.carousel-inner:not(.dragging) {
+  cursor: grab;
+}
+
+.carousel-inner .swiper-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.carousel-inner .swiper-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-height: 108px;
+  max-width: 108px;
+  content-visibility: auto;
+  contain-intrinsic-size: 108px 108px;
+  transform: translateZ(0);
+  transform-origin: center center;
+  transition:
+    opacity var(--transition-main),
+    filter var(--transition-main),
+    border-color var(--transition-main),
+    transform var(--transition-main);
+  opacity: 0.5;
+  will-change: opacity, filter;
+  filter: brightness(0.5);
+  border: 2px solid rgba(255, 255, 255, 0);
+  box-sizing: border-box;
+  transform: translateY(2px);
+}
+
+.carousel-inner .swiper-slide:hover,
+.swiper-slide:has(.section-divider),
+.carousel-inner .swiper-slide.is-selected {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(0px);
+  filter: brightness(1);
+  opacity: 1;
+}
+
+.swiper-slide:has(.section-divider) {
+  border-color: transparent !important;
+}
+
+.carousel-inner .swiper-slide.is-selected {
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.carousel-inner .swiper-slide:active {
+  filter: brightness(1.2) saturate(1.5);
+  border-color: #fff;
+  transition: none !important;
+}
+
+.carousel-inner .swiper-slide:hover .video-badge,
+.carousel-inner .swiper-slide.is-selected .video-badge {
+  opacity: 0.7;
+}
+
+.thumb-card {
+  flex: 0 0 auto;
+  width: 108px !important;
+  height: 108px !important;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+
+.thumb-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity var(--transition-main);
+}
+
+.video-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 25px;
+  height: 25px;
+  box-shadow: 0 0 0 2px #fff;
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  opacity: 0.4;
+  transition:
+    opacity var(--transition-main),
+    transform var(--transition-main);
+}
+
+.section-divider {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  gap: 10px;
+  opacity: 1;
+  user-select: none;
+  text-align: center;
+  max-width: 108px;
+  max-height: 108px;
+}
+
+.section-divider-line {
+  width: 1px;
+  height: 48px;
+  background: var(--color-border);
+}
+
+.section-divider-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  padding: 0 12px;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.7;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(5, 5, 7, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 5px 9px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: var(--color-text);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-main);
+  will-change: opacity;
+  z-index: 60;
+  backdrop-filter: blur(8px);
+}
+
+.thumb-card:hover .tooltip {
+  opacity: 1;
+}
+
+/* ─── Responsive (Mobile) ────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
   :root {
     --carousel-peek: 48px;
     --carousel-height: 92px;
+    --ui-gap-x: 12px;
+    --ui-gap-y: 12px;
   }
 
   * {
     backdrop-filter: none !important;
   }
 
-  .carousel-inner .swiper-slide {
-    max-width: 80px;
-    max-height: 80px;
+  /* ─── Presentation: Main View ────────────────────────────────────────────── */
+
+  .swipe-hint {
+    display: block;
   }
 
-  .section-divider-label {
-    font-size: 9px;
-    font-weight: 300;
-    padding: 0 6px;
-  }
-
-  .section-divider {
-    width: 80px;
-    max-width: 80px;
-    max-height: 80px;
-    padding: 0;
-    gap: 10px;
-  }
+  /* ─── Presentation: Media Info ───────────────────────────────────────────── */
 
   .media-info {
     left: 50%;
@@ -648,9 +663,7 @@ body,
     flex-shrink: 0;
   }
 
-  .swipe-hint {
-    display: block;
-  }
+  /* ─── Presentation: UI Controls ──────────────────────────────────────────── */
 
   .help-trigger {
     display: none;
@@ -670,19 +683,19 @@ body,
     display: none;
   }
 
-  :root {
-    --ui-gap-x: 12px;
-    --ui-gap-y: 12px;
-  }
+  /* ─── Carousel: Navigation Buttons ───────────────────────────────────────── */
+
   .pin-nav-btn {
     height: 32px;
     width: calc(50% - (72px) - var(--ui-gap-x));
     padding: 0 calc(var(--ui-gap-x) / 2);
     gap: 0;
   }
+
   .pin-nav-btn.prev {
     left: var(--ui-gap-x);
   }
+
   .pin-nav-btn.next {
     right: var(--ui-gap-x);
   }
@@ -694,5 +707,26 @@ body,
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 10px;
+  }
+
+  /* ─── Carousel: Swiper & Items ───────────────────────────────────────────── */
+
+  .carousel-inner .swiper-slide {
+    max-width: 80px;
+    max-height: 80px;
+  }
+
+  .section-divider {
+    width: 80px;
+    max-width: 80px;
+    max-height: 80px;
+    padding: 0;
+    gap: 10px;
+  }
+
+  .section-divider-label {
+    font-size: 9px;
+    font-weight: 300;
+    padding: 0 6px;
   }
 }
