@@ -95,9 +95,9 @@ export function PresentationView({
     if (displayedItem?.type !== "video" || !pixelSize) return "0px";
 
     // Calculate the height of the revealed carousel (120px inner + peek)
-    // We use a small buffer to match the CSS media query accurately
+    // Ensure we use literal operators (<=) to avoid SyntaxErrors
     const isMobile = window.innerWidth <= 640;
-    const carouselHeight = 120 + (isMobile ? 48 : 66);
+    const carouselHeight = isMobile ? 139 : 186;
     const uiGapY = isMobile ? 12 : 24;
 
     const vH = window.innerHeight;
@@ -190,7 +190,7 @@ export function PresentationView({
     if (activePointers.current.size > 0) return;
 
     if (isZoomed) {
-      // Start from the "fit" size to create a seamless transition from the standard view
+      // Start from the fit size to create a seamless transition from the standard view
       setScale(fitScale);
       setPosition({ x: 0, y: 0 });
 
@@ -320,7 +320,7 @@ export function PresentationView({
       initialPinchDistance.current = Math.sqrt(pdx * pdx + pdy * pdy);
       initialPinchScale.current = scale;
 
-      // ← record where the midpoint starts
+      // Record where the midpoint starts for panning
       lastPinchMidpoint.current = {
         x: (pts[0].clientX + pts[1].clientX) / 2,
         y: (pts[0].clientY + pts[1].clientY) / 2,
@@ -480,12 +480,13 @@ export function PresentationView({
             top: "50%",
             [hintDir === "next" ? "right" : "left"]: "var(--ui-gap-x)",
             transform: `translate3d(${
-              (hintDir === "next" ? 1 : -1) * (1 - swipePower) * 20
+              (hintDir === "next" ? 1 : -1) * (1 - swipePower * 1.2) * 20
             }px, -50%, 0)`,
             opacity: Math.min(swipePower, 1),
             color: "#FFF",
             fontSize: "4rem",
             fontFamily: "sans-serif",
+            fontWeight: "100",
             pointerEvents: "none",
             textShadow: "0 0px 8px #000",
             zIndex: 10,
@@ -515,6 +516,7 @@ export function PresentationView({
               : "grab",
           touchAction: "none",
           zIndex: 0,
+          backgroundColor: "#000",
         }}
         onPointerDown={handlePointerDown}
       >

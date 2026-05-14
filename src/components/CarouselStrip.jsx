@@ -196,7 +196,7 @@ export function CarouselStrip({
         loop={true}
         nested={true} // Better isolation for event bubbling
         touchReleaseOnEdges={true}
-        resistanceRatio={0} // Makes the edges feel cleaner during flicks
+        resistanceRatio={1} // Makes the edges feel cleaner during flicks
         // Use discrete events to avoid constant re-renders during drag
         onDragStart={() => setIsSwiperDragging(true)}
         onDragEnd={() => setIsSwiperDragging(false)}
